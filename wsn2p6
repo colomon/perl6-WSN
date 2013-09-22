@@ -1,0 +1,31 @@
+# SYNTAX     = { PRODUCTION } .
+# PRODUCTION = IDENTIFIER "=" EXPRESSION "." .
+# EXPRESSION = TERM { "|" TERM } .
+# TERM       = FACTOR { FACTOR } .
+# FACTOR     = IDENTIFIER
+#            | LITERAL
+#            | "[" EXPRESSION "]"
+#            | "(" EXPRESSION ")"
+#            | "{" EXPRESSION "}" .
+# IDENTIFIER = letter { letter } .
+# LITERAL    = """" character { character } """" .
+
+grammar WSN {
+    regex syntax { <production>* }
+    regex production { <identifier> "=" <expression> "." }
+    regex expression { <term> [ "|" <term> ]* }
+    regex term { <factor> <factor>* }
+    regex factor { 
+                    <identifier>
+                  | <literal>
+                  | [ "[" <expression> "]" ]
+                  | [ "(" <expression> ")" ]
+                  | [ "{" <expression> "}" ]
+                 }
+    regex identifier { <alpha> <alpha>* }
+    regex literal { '"' \S \S* '"'}
+}
+
+my $file-data = slurp("wsn.wsn");
+my $match = WSN.parse($file-data, :rule<syntax>);
+say $match;
