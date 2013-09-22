@@ -11,21 +11,21 @@
 # LITERAL    = """" character { character } """" .
 
 grammar WSN {
-    regex syntax { <production>* }
-    regex production { <identifier> "=" <expression> "." }
-    regex expression { <term> [ "|" <term> ]* }
-    regex term { <factor> <factor>* }
-    regex factor { 
+    rule TOP { ^ <production>* $ }
+    rule production { <identifier> "=" <expression> "." }
+    rule expression { <term> [ "|" <term> ]* }
+    rule term { <factor> <factor>* }
+    rule factor { 
                     <identifier>
                   | <literal>
-                  | [ "[" <expression> "]" ]
-                  | [ "(" <expression> ")" ]
-                  | [ "{" <expression> "}" ]
+                  | [ '[' <expression> ']' ]
+                  | [ '(' <expression> ')' ]
+                  | [ '{' <expression> '}' ]
                  }
-    regex identifier { <alpha> <alpha>* }
-    regex literal { '"' \S \S* '"'}
+    regex identifier { \w+ }
+    regex literal { '"' \S+ '"'}
 }
 
 my $file-data = slurp("wsn.wsn");
-my $match = WSN.parse($file-data, :rule<syntax>);
+my $match = WSN.parse($file-data);
 say $match;
