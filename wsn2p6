@@ -1,3 +1,5 @@
+# use Grammar::Tracer;
+
 # SYNTAX     = { PRODUCTION } .
 # PRODUCTION = IDENTIFIER "=" EXPRESSION "." .
 # EXPRESSION = TERM { "|" TERM } .
@@ -15,12 +17,13 @@ grammar WSN {
     rule production { <identifier> "=" <expression> "." }
     rule expression { <term> [ "|" <term> ]* }
     rule term { <factor> <factor>* }
-    rule factor { <identifier> | <literal> | <square> | <paren> | <curly> }
+    rule factor { <identifier> | <literal> | <square> | <paren> | <curly> | <special-char> }
     regex square { '[' <expression> ']' }
     regex paren  { '(' <expression> ')' }
     regex curly  { '{' <expression> '}' }
     regex identifier { \w+ }
-    regex literal { '"' \S+ '"'}
+    regex literal { [ '"' \S+ '"' ] | [ "'" \S+ "'" ] } # change from Wikipedia spec to match ISO 10303 usage
+    regex special-char { '\\' [ 'a' | 'q' | 's' | 'n' | 'x8' | 'x9' | 'xA' | 'xB' | 'xC' | 'xD' ] }
 }
 
 class WSN-Actions {
@@ -29,7 +32,10 @@ class WSN-Actions {
     }
     
     method TOP($/) { make $<production>».ast.join("\n"); }
-    method production($/) { make "rule " ~ $<identifier>.ast ~ ' { ' ~ $<expression>.ast ~ ' } '; }
+    method production($/) {
+        # say $<identifier>.ast;
+        make "    rule " ~ $<identifier>.ast ~ ' { :i ' ~ $<expression>.ast ~ ' } ';
+    }
     method expression($/) {
         make $<term> > 1
                 ?? $<term>».ast.map({ wrap-if-needed($_) }).join(' | ')
@@ -47,6 +53,8 @@ class WSN-Actions {
             make $<paren>.ast;
         } elsif $<curly> {
             make $<curly>.ast;
+        } elsif $<special-char> {
+            make $<special-char>.ast;
         } else {
             die "Who am I?";
         }
@@ -55,9 +63,28 @@ class WSN-Actions {
     method paren($/)  { make '[' ~ $<expression>.ast ~ ']' }
     method curly($/)  { make wrap-if-needed($<expression>.ast) ~ '*' }
     method identifier($/) { make ~$/ }
-    method literal($/) { make $/.subst(/^ '"'/, "'").subst(/'"' $/, "'").subst(/'""'/, '"') }
+    method literal($/) { make $/.subst(/^ '"'/, "'").subst(/'"' $/, "'").subst(/'""'/, '"').subst(/'\\'/, '\\\\') }
+    method special-char($/) {
+        given $/ {
+            when '\\a' { make "<alpha>"; }
+            when '\\q' { make q{ '"' }; }
+            default { make ~$/; }
+        }
+    }
 }
 
-my $file-data = slurp("wsn.wsn");
-my $match = WSN.parse($file-data, :actions(WSN-Actions.new));
-say $match.ast;
+sub MAIN($filename, :$name, :$test?) {
+    my $file-data = slurp($filename);
+    my $match = WSN.parse($file-data, :actions(WSN-Actions.new));
+    say "grammar $name \{";
+    say $match.ast;
+    say "\}";
+    if $test {
+        say "";
+        say 'sub MAIN($filename) {';
+        say '    my $file-data = slurp($filename);';
+        say "    my \$match = { $name }.parse(\$file-data, :rule<{ $test }>);";
+        say '    say $match;';
+        say '}';
+    }
+}
