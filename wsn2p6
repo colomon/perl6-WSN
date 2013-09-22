@@ -24,9 +24,17 @@ grammar WSN {
 }
 
 class WSN-Actions {
+    sub wrap-if-needed($s) {
+        $s ~~ /\s/ ?? "[ $s ]" !! $s;
+    }
+    
     method TOP($/) { make $<production>».ast.join("\n"); }
     method production($/) { make "rule " ~ $<identifier>.ast ~ ' { ' ~ $<expression>.ast ~ ' } '; }
-    method expression($/) { make $<term>».ast.join(' | '); }
+    method expression($/) {
+        make $<term> > 1
+                ?? $<term>».ast.map({ wrap-if-needed($_) }).join(' | ')
+                !! $<term>[0].ast; 
+    }
     method term($/) { make $<factor>».ast.join(' '); }
     method factor($/) {
         if $<identifier> {
@@ -43,9 +51,9 @@ class WSN-Actions {
             die "Who am I?";
         }
     }
-    method square($/) { make $<expression>.ast ~ '?' }
+    method square($/) { make wrap-if-needed($<expression>.ast) ~ '?' }
     method paren($/)  { make '[' ~ $<expression>.ast ~ ']' }
-    method curly($/)  { make $<expression>.ast ~ '*' }
+    method curly($/)  { make wrap-if-needed($<expression>.ast) ~ '*' }
     method identifier($/) { make ~$/ }
     method literal($/) { make $/.subst(/^ '"'/, "'").subst(/'"' $/, "'").subst(/'""'/, '"') }
 }
