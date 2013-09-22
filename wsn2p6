@@ -15,17 +15,41 @@ grammar WSN {
     rule production { <identifier> "=" <expression> "." }
     rule expression { <term> [ "|" <term> ]* }
     rule term { <factor> <factor>* }
-    rule factor { 
-                    <identifier>
-                  | <literal>
-                  | [ '[' <expression> ']' ]
-                  | [ '(' <expression> ')' ]
-                  | [ '{' <expression> '}' ]
-                 }
+    rule factor { <identifier> | <literal> | <square> | <paren> | <curly> }
+    regex square { '[' <expression> ']' }
+    regex paren  { '(' <expression> ')' }
+    regex curly  { '{' <expression> '}' }
     regex identifier { \w+ }
     regex literal { '"' \S+ '"'}
 }
 
+class WSN-Actions {
+    method TOP($/) { make $<production>».ast.join("\n"); }
+    method production($/) { make "rule " ~ $<identifier>.ast ~ ' { ' ~ $<expression>.ast ~ ' } '; }
+    method expression($/) { make $<term>».ast.join(' | '); }
+    method term($/) { make $<factor>».ast.join(' '); }
+    method factor($/) {
+        if $<identifier> {
+            make '<' ~ $<identifier>.ast ~ '>';
+        } elsif $<literal> {
+            make $<literal>.ast;
+        } elsif $<square> {
+            make $<square>.ast;
+        } elsif $<paren> {
+            make $<paren>.ast;
+        } elsif $<curly> {
+            make $<curly>.ast;
+        } else {
+            die "Who am I?";
+        }
+    }
+    method square($/) { make $<expression>.ast ~ '?' }
+    method paren($/)  { make '[' ~ $<expression>.ast ~ ']' }
+    method curly($/)  { make $<expression>.ast ~ '*' }
+    method identifier($/) { make ~$/ }
+    method literal($/) { make $/.subst(/^ '"'/, "'").subst(/'"' $/, "'").subst(/'""'/, '"') }
+}
+
 my $file-data = slurp("wsn.wsn");
-my $match = WSN.parse($file-data);
-say $match;
+my $match = WSN.parse($file-data, :actions(WSN-Actions.new));
+say $match.ast;
