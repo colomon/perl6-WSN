@@ -34,7 +34,7 @@ class WSN-Actions {
     method TOP($/) { make $<production>».ast.join("\n"); }
     method production($/) {
         # say $<identifier>.ast;
-        make "    rule " ~ $<identifier>.ast ~ ' { :i ' ~ $<expression>.ast ~ ' } ';
+        make "    regex " ~ $<identifier>.ast ~ ' { :i :s ' ~ $<expression>.ast ~ ' } ';
     }
     method expression($/) {
         make $<term> > 1
