@@ -73,7 +73,7 @@ class WSN-Actions {
     }
 }
 
-sub MAIN($filename, :$name, :$test?, :$trace?) {
+sub MAIN($filename, :$name!, :$test?, :$trace?) {
     my $file-data = slurp($filename);
     my $match = WSN.parse($file-data, :actions(WSN-Actions.new));
 
