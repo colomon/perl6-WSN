@@ -73,9 +73,15 @@ class WSN-Actions {
     }
 }
 
-sub MAIN($filename, :$name, :$test?) {
+sub MAIN($filename, :$name, :$test?, :$trace?) {
     my $file-data = slurp($filename);
     my $match = WSN.parse($file-data, :actions(WSN-Actions.new));
+
+    if $trace {
+        say "use Grammar::Tracer;";
+        say "";
+    }
+    
     say "grammar $name \{";
     say $match.ast;
     say "\}";
