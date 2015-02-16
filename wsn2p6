@@ -18,9 +18,9 @@ grammar WSN {
     rule expression { <term> [ "|" <term> ]* }
     rule term { <factor> <factor>* }
     rule factor { <identifier> | <literal> | <square> | <paren> | <curly> | <special-char> }
-    regex square { '[' <expression> ']' }
-    regex paren  { '(' <expression> ')' }
-    regex curly  { '{' <expression> '}' }
+    rule square { '[' <expression> ']' }
+    rule paren  { '(' <expression> ')' }
+    rule curly  { '{' <expression> '}' }
     regex identifier { \w+ }
     regex literal { [ '"' \S+ '"' ] | [ "'" \S+ "'" ] } # change from Wikipedia spec to match ISO 10303 usage
     regex special-char { '\\' [ 'a' | 'q' | 's' | 'n' | 'x8' | 'x9' | 'xA' | 'xB' | 'xC' | 'xD' ] }
